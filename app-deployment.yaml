@@ -35,6 +35,14 @@ spec:
                 secretKeyRef:
                   name: mysql-db-secret
                   key: password
+            - name: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+              value: "20"  # K8s 里的值会直接覆盖 Jar 包里的 5
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://mysql:3306/user_db"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "user_svc_user"
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom: { secretKeyRef: { name: svc-db-secret, key: USER_DB_PASS } }
 
           # --- 健康检查：利用 Actuator 端口 ---
           livenessProbe:

@@ -6,7 +6,9 @@ spring:
   cloud:
     kubernetes:
       config:
-        enabled: false
+        enabled: false  # 如果是 true，说明它正试图从 K8s ConfigMap 读配置
         sources:
-          - name: common-db-config
-          - name: user-service
+          - name: ${spring.application.name}
+      reload:
+        enabled: false  # 如果有这一行，说明它支持“动态”热更新配置
+

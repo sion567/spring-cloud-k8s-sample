@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: dev
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: dev
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret     # 你创建的 Secret 名字
+                  key: ROOT_PASSWORD      # Secret 里的 Key
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
+            - name: mysql-init-volume
+              mountPath: /docker-entrypoint-initdb.d/ # 关键目录
+      volumes:
+        - name: mysql-init-volume
+          configMap:
+            name: mysql-init-config
+        - name: mysql-storage
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: dev
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306

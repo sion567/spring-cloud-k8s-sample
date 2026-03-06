@@ -1,3 +1,5 @@
+server:
+  port: 8085
 management:
   endpoints:
     web:
@@ -9,6 +11,11 @@ management:
 spring:
   profiles:
     active: ${ENV:dev}
+  datasource:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
   flyway:
     enabled: true
     locations:

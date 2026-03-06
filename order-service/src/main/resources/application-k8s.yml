@@ -4,6 +4,8 @@ management:
       exposure:
         include: "health,info,prometheus,loggers"
 spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
   flyway:
     locations: classpath:db/migration
   cloud:

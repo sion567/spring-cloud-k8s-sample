@@ -1,0 +1,176 @@
+x-templates:
+  common-resources: &common-resources
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+  common-spec: &common-spec
+    imagePullPolicy: Never
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: auth-service:v1
+          <<: *common-spec
+          resources:
+            <<: *common-resources
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8082
+            initialDelaySeconds: 20
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: user-service:v1
+          <<: *common-spec
+          resources:
+            <<: *common-resources
+          ports:
+            - containerPort: 8081
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+            - name: MYSQL_HOST
+              value: mysql
+            - name: DB_URL
+              value: "jdbc:mysql://mysql:3306/user_db?useSSL=false"
+            - name: DB_USERNAME
+              valueFrom: { secretKeyRef: { name: mysql-secret, key: USER_DB_USER } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: mysql-secret, key: USER_DB_PASS } }
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8081
+            initialDelaySeconds: 20
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+spec:
+  selector:
+    app: user-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+        - name: order-service
+          image: order-service:v1
+          <<: *common-spec
+          resources:
+            <<: *common-resources
+          ports:
+            - containerPort: 8085
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+            - name: MYSQL_HOST
+              value: mysql
+            - name: DB_URL
+              value: "jdbc:mysql://mysql:3306/order_db?useSSL=false"
+            - name: DB_USERNAME
+              valueFrom: { secretKeyRef: { name: mysql-secret, key: ORDER_DB_USER } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: mysql-secret, key: ORDER_DB_PASS } }
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8085
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8085
+            initialDelaySeconds: 20
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+spec:
+  selector:
+    app: order-service
+  ports:
+    - port: 8085
+      targetPort: 8085

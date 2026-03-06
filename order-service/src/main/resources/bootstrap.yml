@@ -9,4 +9,3 @@ spring:
         enabled: false
         sources:
           - name: ${spring.application.name} # 每个服务特有的配置（如端口）
-          - name: common-db-config          # 共享的配置

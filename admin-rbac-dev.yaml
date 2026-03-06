@@ -4,7 +4,7 @@ metadata:
   name: admin-server-sa
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: ClusterRoleBinding # 这个权限是跨命名空间的（如果你的 admin-server 部署在 dev 空间，但你想让它监控 test 空间或全局的微服务，就必须用 ClusterRoleBinding）
 metadata:
   name: admin-server-view-binding
 roleRef:
@@ -14,4 +14,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: admin-server-sa
-    namespace: default
+    namespace: dev # <--- 这里根据当前环境写死，否则会找错

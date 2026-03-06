@@ -18,3 +18,8 @@ spring:
     admin:
       client:
         url: http://admin-server:8080
+  datasource:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
