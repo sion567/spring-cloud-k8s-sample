@@ -1,0 +1,9 @@
+CREATE TABLE orders (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_no VARCHAR(50) NOT NULL,
+    user_id BIGINT NOT NULL,
+    amount DECIMAL(10, 2),
+    status VARCHAR(20),
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+

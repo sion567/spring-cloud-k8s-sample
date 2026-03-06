@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: user-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  cloud:
+    kubernetes:
+      config:
+        enabled: false
+        sources:
+          - name: common-db-config
+          - name: user-service

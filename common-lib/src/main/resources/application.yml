@@ -1,0 +1,21 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+spring:
+  jackson:
+    # Set date format
+    date-format: yyyy-MM-dd HH:mm:ss
+    # Serialize times as ISO-8601
+    serialization:
+      write-dates-as-timestamps: false
+    # Ignore null fields
+    default-property-inclusion: non_null
+    # Pretty print JSON
+    serialization-features:
+      indent_output: true

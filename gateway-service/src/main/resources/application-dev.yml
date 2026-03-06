@@ -1,0 +1,33 @@
+server:
+  port: 8080
+app.auth.enabled: false
+spring:
+  boot:
+    admin:
+      client:
+        url: http://localhost:8888
+        instance:
+          service-base-url: http://localhost:8080
+  cloud:
+    discovery:
+      client:
+        simple:
+          instances:
+            # 对应 @FeignClient(name = "user-service")
+            user-service:
+              - host: localhost
+                port: 8081
+            # 对应 @FeignClient(name = "order-service")，告訴 Spring：order-service 在本地 8082 端口
+            order-service:
+              - host: localhost
+                port: 8082
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+
+management:
+  health:
+    redis:
+      enabled: false

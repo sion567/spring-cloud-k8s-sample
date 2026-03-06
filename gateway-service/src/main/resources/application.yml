@@ -1,0 +1,36 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # 生产环境建议只开启常用端点
+  endpoint:
+    health:
+      show-details: always
+spring:
+  profiles:
+    active: ${ENV:dev}
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 2000 # 2秒连不上就放弃
+        response-timeout: 5s  # 5秒沒回覆就超时
+      routes:
+        # 1. 路由到 Java Order 服務
+        - id: order-service-route
+          uri: lb://order-service  # lb 代表負載均衡，直接找 K8s 中的 Service 名
+          predicates:
+            - Path=/order-api/**  # 外部访问：/order-api/get
+          filters:
+            - StripPrefix=1        # 转发到后端时去掉 /order-api，变成 /get
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@ipKeyResolver}"
+                rate-limiter: "#{@myRateLimiter}"
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+            allowedHeaders: "*"

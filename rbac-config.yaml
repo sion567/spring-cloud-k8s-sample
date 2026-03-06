@@ -1,0 +1,25 @@
+# 1. 定义「配置读取」角色
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: microservice-config-reader
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+
+---
+# 2. 角色绑定账号
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: allow-default-svc-account-read-config
+  namespace: your-namespace-name  # 👈 請替換為你的微服務命名空間
+subjects:
+  - kind: ServiceAccount
+    name: default                  # 針對使用預設帳戶運行的 Pod
+    namespace: your-namespace-name
+roleRef:
+  kind: ClusterRole
+  name: microservice-config-reader
+  apiGroup: rbac.authorization.k8s.io

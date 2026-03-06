@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: order-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  cloud:
+    kubernetes:
+      config:
+        enabled: false
+        sources:
+          - name: ${spring.application.name} # 每个服务特有的配置（如端口）
+          - name: common-db-config          # 共享的配置

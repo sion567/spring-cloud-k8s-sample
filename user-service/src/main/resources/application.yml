@@ -1,0 +1,21 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # 生产环境建议只开启常用端点
+  endpoint:
+    health:
+      show-details: always
+spring:
+  profiles:
+    # This activates the 'dev' profile, loading application-dev.yml
+    active: ${ENV:dev}
+  flyway:
+    enabled: true
+    locations:
+      - classpath:db/migration
+      - classpath:db/testdata
+  boot:
+    admin:
+      client:
+        url: http://admin-server:8080 # 指向 K8s 中的 admin-server Service

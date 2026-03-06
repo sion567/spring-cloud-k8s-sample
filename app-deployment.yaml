@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${APP_NAME}       # 部署名称，如 order-service
+  labels:
+    app: ${APP_NAME}
+spec:
+  replicas: 1             # 副本数
+  selector:
+    matchLabels:
+      app: ${APP_NAME}
+  template:
+    metadata:
+      labels:
+        app: ${APP_NAME}
+    spec:
+      serviceAccountName: admin-server-sa # 使用之前创建的有权限读取 ConfigMap 的账号
+      containers:
+        - name: ${APP_NAME}
+          image: ${APP_NAME}:v1             # 对应你之前 build 的镜像
+          imagePullPolicy: Never            # 强制使用本地镜像
+          ports:
+            - containerPort: 8080
+          # --- 环境变量注入：从 Secret 读取数据库密码 ---
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "k8s"  # 启动时，这行会把 dev 强行改为 prod(Spring Boot 会自动将 SPRING_PROFILES_ACTIVE 映射为 spring.profiles.active)
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-db-secret
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-db-secret
+                  key: password
+
+          # --- 健康检查：利用 Actuator 端口 ---
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 5
+
+---
+# 对应的内部 Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${APP_NAME}
+spec:
+  selector:
+    app: ${APP_NAME}
+  ports:
+    - protocol: TCP
+      port: 8080      # 集群内访问端口
+      targetPort: 8080 # 容器端口
