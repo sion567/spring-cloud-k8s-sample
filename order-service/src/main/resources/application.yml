@@ -11,9 +11,6 @@ spring:
     active: ${ENV:dev}
   flyway:
     enabled: true
-    # 這裡指定兩個路徑：
-    # 1. db/migration (存放公共建表 SQL)
-    # 2. db/testdata (存放僅限 dev 的數據 SQL)
     locations:
       - classpath:db/migration
       - classpath:db/testdata

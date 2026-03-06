@@ -2,7 +2,7 @@ package com.example.user.service;
 
 import com.example.common.exception.BusinessException;
 import com.example.user.entity.User;
-import com.example.user.mapper.UserRepository;
+import com.example.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

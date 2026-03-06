@@ -5,12 +5,15 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -21,8 +24,8 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
-    // 实际开发中建议放在 K8s Secret 或 ConfigMap 中
-    private final String SECRET = "YourSuperSecretKeyForJWTEncryption123456";
+    @Value("${jjwt.secret}")
+    private String secret;
 
     @Autowired
     private WebClient.Builder webClientBuilder;
@@ -32,7 +35,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-       return filterV3(exchange, chain);
+        return filterV3(exchange, chain);
     }
 
     @Override
@@ -40,9 +43,16 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         return -100; // 优先级最高
     }
 
+    private String parseToken(HttpHeaders headers) {
+        String authHeader = headers.getFirst(HttpHeaders.AUTHORIZATION);
+        if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+        return null;
+    }
+
     private Mono<Void> filterV1(ServerWebExchange exchange, GatewayFilterChain chain) {
-        // 1. 获取请求头中的 Token
-        String token = exchange.getRequest().getHeaders().getFirst("Authorization");
+        String token = parseToken(exchange.getRequest().getHeaders());
 
         if (token == null || token.isEmpty()) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -75,9 +85,9 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        // 2. 获取 Token
-        String token = exchange.getRequest().getHeaders().getFirst("Authorization");
-        if (token == null || !token.startsWith("Bearer ")) {
+        String token = parseToken(exchange.getRequest().getHeaders());
+
+        if (token == null || token.isEmpty()) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
@@ -85,7 +95,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         try {
             // 3. 校验 JWT
             token = token.substring(7);
-            SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+            SecretKey key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
             Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
 
             // 4. 解析 UserId 并增强 Header 传给后端微服务
@@ -102,7 +112,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<Void> filterV3(ServerWebExchange exchange, GatewayFilterChain chain) {
-        String token = exchange.getRequest().getHeaders().getFirst("Authorization");
+        String token = parseToken(exchange.getRequest().getHeaders());
 
         if (token == null || token.isEmpty()) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);

@@ -8,7 +8,6 @@ management:
       show-details: always
 spring:
   profiles:
-    # This activates the 'dev' profile, loading application-dev.yml
     active: ${ENV:dev}
   flyway:
     enabled: true
@@ -18,4 +17,4 @@ spring:
   boot:
     admin:
       client:
-        url: http://admin-server:8080 # 指向 K8s 中的 admin-server Service
+        url: http://admin-server:8080

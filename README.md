@@ -30,10 +30,12 @@ minikube service admin-server --url
 
 
 密码存储位置：Secret
+kubectl create secret generic jwt-config --from-literal=JWT_SECRET=YourSuperLongAndSecureSecretKey1234567890
 
 
 minikube image build --build-arg SERVICE_NAME=order-service --build-arg SERVICE_PATH=order-service -t order-service:v1 .
 minikube image build --build-arg SERVICE_NAME=user-service --build-arg SERVICE_PATH=user-service -t user-service:v1 .
 
-  
 
+
+curl -X GET http://localhost:8080/order-api/api/v1/orders/me -H "Authorization: Bearer dummy-jwt-token" -H "X-User-Id: 1"  -H "Content-Type: application/json"

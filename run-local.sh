@@ -12,7 +12,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "[2/3] build business components..."
-mvn package -DskipTests -pl admin-server,user-service,order-service,gateway-service
+mvn package -DskipTests -pl admin-server,user-service,auth-service,order-service,gateway-service
 
 mkdir -p ./logs
 
@@ -29,7 +29,8 @@ start_service "admin-server" 8888
 sleep 5
 
 start_service "user-service" 8081
-start_service "order-service" 8082
+start_service "auth-service" 8082
+start_service "order-service" 8085
 start_service "gateway-service" 8080
 
 echo "All services are now operational!"

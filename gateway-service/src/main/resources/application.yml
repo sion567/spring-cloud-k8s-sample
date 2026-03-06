@@ -9,13 +9,15 @@ management:
 spring:
   profiles:
     active: ${ENV:dev}
+  application:
+    name: gateway-service
   cloud:
     gateway:
       httpclient:
         connect-timeout: 2000 # 2秒连不上就放弃
         response-timeout: 5s  # 5秒沒回覆就超时
       routes:
-        # 1. 路由到 Java Order 服務
+        # 1. 路由到  Order 服务
         - id: order-service-route
           uri: lb://order-service  # lb 代表負載均衡，直接找 K8s 中的 Service 名
           predicates:
@@ -34,3 +36,6 @@ spring:
               - GET
               - POST
             allowedHeaders: "*"
+
+jjwt:
+  secret: ${JWT_SECRET_KEY:default_local_secret_for_dev_only_123456}

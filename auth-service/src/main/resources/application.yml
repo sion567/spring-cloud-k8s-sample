@@ -1,23 +1,17 @@
-server:
-  port: 8083
-
-spring:
-  application:
-    name: auth-service
-  boot:
-    admin:
-      client:
-        url: http://127.0.0.1:8888 # Admin Server 地址
-        instance:
-          service-base-url: http://localhost:${server.port}
-          discovery:
-            enabled: false # 避开 LoadBalancer 拦截
-
 management:
   endpoints:
     web:
       exposure:
-        include: "*" # 暴露所有端点给 Admin 监控
+        include: "*" # 生产环境建议只开启常用端点
   endpoint:
     health:
       show-details: always
+spring:
+  application:
+    name: auth-service
+  profiles:
+    active: ${ENV:dev}
+  boot:
+    admin:
+      client:
+        url: http://admin-server:8080 # 指向 K8s 中的 admin-server Service

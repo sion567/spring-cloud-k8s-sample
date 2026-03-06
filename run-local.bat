@@ -14,8 +14,8 @@ if %errorlevel% neq 0 (
     exit /b %errorlevel%
 )
 
-echo [2/3] build business components (admin, user, order, gateway)...
-call mvn package -DskipTests -pl admin-server,user-service,order-service,gateway-service
+echo [2/3] build business components (admin, user, auth, order, gateway)...
+call mvn package -DskipTests -pl admin-server,user-service,auth-service,order-service,gateway-service
 if %errorlevel% neq 0 (
     echo build failed！
     pause
@@ -34,8 +34,12 @@ echo -> Starting User Service (Port: 8081)...
 start "User Service" cmd /k "java -jar user-service\target\user-service-1.0-SNAPSHOT.jar"
 timeout /t 5
 
+:: 启动 auth Service
+echo -> Starting Auth Service (Port: 8082)...
+start "Auth Service" cmd /k "java -jar auth-service\target\auth-service-1.0-SNAPSHOT.jar"
+
 :: 启动 Order Service
-echo -> Starting Order Service (Port: 8082)...
+echo -> Starting Order Service (Port: 8085)...
 start "Order Service" cmd /k "java -jar order-service\target\order-service-1.0-SNAPSHOT.jar"
 
 :: 启动 Gateway Service

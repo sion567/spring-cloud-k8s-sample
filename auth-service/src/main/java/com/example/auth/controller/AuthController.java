@@ -17,7 +17,7 @@ public class AuthController {
     }
 
     @GetMapping("/validate")
-    public boolean validate(@RequestParam String token) {
-        return token.startsWith("dummy-jwt-token");
+    public boolean validate(@RequestParam("token") String token) {
+        return token != null && token.startsWith("dummy-jwt-token");
     }
 }
