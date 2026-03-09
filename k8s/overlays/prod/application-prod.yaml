@@ -1,8 +1,19 @@
 spring:
   datasource:
-    url: jdbc:mysql://://rm-xxxx.mysql.rds.aliyuncs.com # 生产用云数据库地址
+    url: jdbc:mysql://://rm-xxxx.mysql.rds.aliyuncs.com
   redis:
     cluster:
-      nodes: # 生产环境可能是集群模式，结构与 base 不同
-        - 192.168.1.1:6379
-        - 192.168.1.2:6379
+      nodes: ${REDIS_NODES:127.0.0.1:6379}
+  data: # 注意：Spring Boot 3.x 路径是 spring.data.redis
+    redis:
+      lettuce:
+        cluster:
+          refresh:
+            # 1. 自适应刷新（强烈推荐）：
+            # 当应用收到 Redis 报错（如 MOVED 或 ASK）时，立即重新拉取集群拓扑
+            adaptive: true
+            
+            # 2. 定时刷新（稳重起见）：
+            # 每隔 60 秒强制刷新一次名单，防止自适应失效
+            period: 60s
+        command-timeout: 2000ms # 生产环境建议增加超时控制，防止线程卡死

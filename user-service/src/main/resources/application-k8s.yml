@@ -6,6 +6,9 @@ management:
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://mysql-service:3306/${DB_NAME:user_db}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   cloud:
     kubernetes:
       config:
@@ -21,3 +24,6 @@ spring:
     # 建議：如果校驗失敗（比如有人改了舊腳本），報錯停止，防止數據不一致
     validate-on-migrate: true
     locations: classpath:db/migration
+  # 针对容器环境的优化
+  server:
+    shutdown: graceful # 优雅停机

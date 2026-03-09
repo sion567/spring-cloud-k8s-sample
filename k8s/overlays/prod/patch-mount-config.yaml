@@ -12,9 +12,9 @@ spec:
             value: "prod"
         volumeMounts:
           - name: config-volume
-            mountPath: /config # SpringBoot 默认会优先读取 /config/application.yaml
-        args: ["--spring.config.location=classpath:/,file:/config/application-prod.yaml"]
+            mountPath: /config  # <--- 这里定义了容器内的绝对路径
+        args: ["--spring.config.import=optional:file:/config/application-prod.yaml"]
       volumes:
         - name: config-volume
           configMap:
-            name: app-config-prod
+            name: app-config-prod # 指向 kustomization 生成的 ConfigMap

@@ -1,0 +1,90 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# 1. 引用基础模板（基础设施和业务应用）
+resources:
+  - ../../base/infrastructure
+  - ../../base/apps/order-service
+  - ../../base/apps/user-service
+  # 也可以加入测试环境特有的资源限制
+  # - resource-quota.yaml
+
+# 2. 强制进入 test 命名空间
+namespace: test
+
+# 3. 统一打标
+commonLabels:
+  env: test
+
+# 4. 生成测试环境专用的 Secret（覆盖 base 中的默认值）
+secretGenerator:
+  - name: mysql-secret
+    behavior: replace
+    literals:
+      - ROOT_PASSWORD=test_root
+      - USER_DB_USER=user_test_account
+      - USER_DB_PASS=UserTest123!
+      - ORDER_DB_USER=order_test_account
+      - ORDER_DB_PASS=OrderTest456!
+  - name: redis-secret
+    behavior: replace
+    literals:
+      - redis_password=test_redis_pwd
+# 2. 针对不同服务注入不同的“身份”环境变量
+patches:
+  # 针对 User Service 的补丁
+  - target:
+      kind: Deployment
+      name: user-service
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/env
+        value:
+          - name: SPRING_PROFILES_ACTIVE
+            value: "k8s"
+          - name: DB_NAME
+            value: "user_db"
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef: {name: mysql-secret, key: USER_DB_USER}
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef: {name: mysql-secret, key: USER_DB_PASS}
+
+  # 针对 Order Service 的补丁
+  - target:
+      kind: Deployment
+      name: order-service
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/env
+        value:
+          - name: SPRING_PROFILES_ACTIVE
+            value: "k8s"
+          - name: DB_NAME
+            value: "order_db"
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef: {name: mysql-secret, key: ORDER_DB_USER}
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef: {name: mysql-secret, key: ORDER_DB_PASS}
+
+  - target:
+      kind: Deployment
+      name: gateway-service
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env
+        value:
+          - name: SPRING_PROFILES_ACTIVE
+            value: "k8s"
+          - name: REDIS_PASSWORD # 仅注入 Redis，不注入 DB 信息
+            valueFrom:
+              secretKeyRef: {name: redis-secret, key: redis_password}
+
+# patches:
+#   - path: patch-user-service.yaml  # 内部包含 DB + Redis
+#   - path: patch-order-service.yaml # 内部包含 DB + Redis
+#   - path: patch-gateway.yaml       # 内部仅包含 Redis
+#   - path: patch-auth-service.yaml  # 视情况而定

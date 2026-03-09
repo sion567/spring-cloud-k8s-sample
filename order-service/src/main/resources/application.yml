@@ -10,7 +10,7 @@ management:
       show-details: always
 spring:
   profiles:
-    active: ${ENV:dev}
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   datasource:
     hikari:
       maximum-pool-size: 10
