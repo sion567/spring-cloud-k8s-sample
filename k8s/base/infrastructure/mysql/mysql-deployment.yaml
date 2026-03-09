@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-server
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  strategy:
+    type: Recreate # 注意：MySQL 是单节点数据库，更新时建议先停旧再启新，防止挂载冲突
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        ports:
+        - containerPort: 3306
+        args: 
+            - --default-authentication-plugin=mysql_native_password # 解决部分 Spring Boot 连接 8.0 的驱动兼容问题
+            - --character-set-server=utf8mb4
+            - --collation-server=utf8mb4_unicode_ci
+        env:
+          - name: TZ
+            value: Asia/Shanghai # 保持与 Java 应用时区一致
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secret     # 你创建的 Secret 名字
+                key: ROOT_PASSWORD      # Secret 里的 Key
+          - name: USER_PWD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secret
+                key: USER_DB_PASS
+          - name: ORDER_PWD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secret
+                key: ORDER_DB_PASS
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        # 1. 存活检查：确保 MySQL 进程没挂
+        livenessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        # 2. 就绪检查：确保 MySQL 已经准备好接收连接
+        readinessProbe:
+          exec:
+            command: ["mysqladmin", "ping", "-h", "localhost"]
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        volumeMounts:
+          - name: mysql-data
+            mountPath: /var/lib/mysql        # 数据存储路径
+          - name: init-scripts
+            mountPath: /docker-entrypoint-initdb.d # 初始化脚本路径
+      volumes:
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: mysql-pvc             # 引用 PVC 确保数据不丢失
+        - name: init-scripts
+          configMap:
+            name: mysql-init-scripts         # 引用 Kustomize 生成的初始化 SQL
+            defaultMode: 0755

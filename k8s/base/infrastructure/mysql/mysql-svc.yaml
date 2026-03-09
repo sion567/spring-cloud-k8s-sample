@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service   # 业务代码通过这个名字连接：jdbc:mysql://mysql-service:3306/...
+  namespace: dev        # 必须与 mysql-deployment 处于同一命名空间
+spec:
+  selector:
+    app: mysql          # 关键：必须匹配 mysql-deployment.yaml 里的 labels.app
+  ports:
+    - protocol: TCP
+      port: 3306        # Service 暴露的端口
+      targetPort: 3306  # 对应 MySQL 容器内部监听的端口
+  type: ClusterIP       # 默认类型，仅限集群内部访问（最安全）

@@ -51,7 +51,7 @@ kubectl apply -f mysql-init-config.yaml -n dev
 kubectl apply -f mysql-dev.yaml 
 kubectl apply -f redis-dev.yaml
 
-kubectl apply -k ./k8s/infrastructure/ # 先启 mysql, redis
+kubectl apply -k ./k8s/infrastructure/mysql # 先启 mysql, redis
 kubectl apply -k ./user-service/k8s/ 
 
 # 1. 应用权限和部署（授权：允许 admin-server 所在的 Pod 读取（get/list/watch）当前 Namespace 下的服务信息。）
