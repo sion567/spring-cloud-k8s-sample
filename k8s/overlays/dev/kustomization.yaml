@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1
+kind: Kustomization
+
+# 引用基础模板
+resources:
+  - ../../base/infrastructure
+  - ../../base
+  - resource-quota.yaml
+  - network-policy.yaml
+
+# 一键修改该环境下所有资源的 Namespace
+namespace: dev
+
+# 为开发环境打上特有的标签
+commonLabels:
+  env: dev
+  layer: infrastructure
+  tier: infrastructure
+  managed-by: kustomize
+
+# 4. 覆盖 Base 中的 Secret（开发环境用简单密码）
+secretGenerator:
+  - name: redis-secret
+    behavior: replace # 关键：替换 base 里的同名 Secret
+    literals:
+      - redis_password=dev-redis-123
+  - name: mysql-pass
+    behavior: replace
+    literals:
+      - password=dev-mysql-123
+
+# 5. 针对 Minikube 的性能优化补丁
+patchesStrategicMerge:
+  - patch-replicas.yaml
+

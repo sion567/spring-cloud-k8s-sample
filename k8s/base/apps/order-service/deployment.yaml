@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+spec:
+  # replicas 不在 base 写死，由 overlays 决定
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+      - name: app
+        image: my-registry/order-service:latest # 镜像地址
+        ports:
+        - containerPort: 8080
+        env:
+          # 从之前 infrastructure 生成的 Secret 中读取 Redis 密码
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: redis-secret
+                key: redis_password
+          # 连接字符串使用 Service 的名称（K8s 内部 DNS）
+          - name: REDIS_HOST
+            value: "redis-service" 
+          - name: DB_URL
+            value: "jdbc:mysql://mysql-service:3306/order_db"
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secret
+                key: ORDER_DB_USER # 对应 secretGenerator 里的 key
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secret
+                key: ORDER_DB_PASS
+        # 业务应用必须包含健康检查
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080

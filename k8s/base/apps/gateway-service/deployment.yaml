@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-service # 这个名字要和 Overlays 中的补丁匹配
+spec:
+  # replicas 在 base 中可以设为 1，或者干脆不写，由 overlays 覆盖
+  selector:
+    matchLabels:
+      app: app-service
+  template:
+    metadata:
+      labels:
+        app: app-service
+    spec:
+      containers:
+      - name: app
+        image: my-repo/app-service:latest # 镜像地址
+        ports:
+        - containerPort: 8080
+        env:
+          # 引用之前在 infrastructure 中定义的公共 Secret
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secret
+                key: APP_DB_PASS
+          # Spring Profile 钩子，默认 dev
+          - name: SPRING_PROFILES_ACTIVE
+            value: "k8s" 
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi

@@ -1,0 +1,16 @@
+# 声明这是 Kustomize 的配置文件
+apiVersion: kustomize.config.k8s.io/v1
+kind: Kustomization
+
+# 1. 核心部分：列出所有需要启动的子资源或文件夹
+resources:
+  - ./mysql           # 会查找该目录下的 kustomization.yaml 或所有 yaml
+  - ./redis           # 同上
+#  - redis-service.yaml # 也可以直接指定单个文件
+
+# 3. 变量生成（可选）：比如你之前担心的 Secret
+# 这样写就不用手动 base64 编码了
+secretGenerator:
+  - name: redis-secret
+    literals:
+      - redis_password=redis123

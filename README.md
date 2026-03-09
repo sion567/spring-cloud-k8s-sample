@@ -51,6 +51,9 @@ kubectl apply -f mysql-init-config.yaml -n dev
 kubectl apply -f mysql-dev.yaml 
 kubectl apply -f redis-dev.yaml
 
+kubectl apply -k ./k8s/infrastructure/ # 先启 mysql, redis
+kubectl apply -k ./user-service/k8s/ 
+
 # 1. 应用权限和部署（授权：允许 admin-server 所在的 Pod 读取（get/list/watch）当前 Namespace 下的服务信息。）
 kubectl apply -f admin-rbac-dev.yaml
 kubectl apply -f admin-deployment-dev.yaml
@@ -62,7 +65,14 @@ minikube image build --build-arg SERVICE_NAME=order-service --build-arg SERVICE_
 minikube image build --build-arg SERVICE_NAME=user-service --build-arg SERVICE_PATH=user-service -t user-service:v1 .
 
 
+# docker build --build-arg SERVICE_NAME=user-service --build-arg SERVICE_PATH=./user-service -t user-service:1.0.0 .
+# 内存比例：-XX:MaxRAMPercentage=75.0 会根据 K8s 分配给 Pod 的内存限制（Limit）动态计算堆大小，比硬编码 512m 更具扩展性。
+# 优雅停机：在 K8s 中，ENTRYPOINT 必须能够透传信号。使用 sh -c "java ..." 是可行的，但确保 Spring Boot 配置了 server.shutdown=graceful
 kubectl apply -f services-all.yaml -n dev
+
+
+监控：你可以通过 kubectl describe quota -n dev 实时查看配额使用情况。
+
 ```
 
 ## 测试

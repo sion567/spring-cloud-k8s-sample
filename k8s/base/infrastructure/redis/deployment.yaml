@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-server
+spec:
+  # 注意：这里不写 replicas，交给 overlays 决定（dev给1，prod给3）
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7.0-alpine # 尽量用 alpine 版本，体积小更安全
+        command: ["redis-server", "--requirepass", "$(REDIS_PASSWORD)"]
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret # 这个名字在 overlays 的 secretGenerator 中定义
+              key: redis_password
+        ports:
+        - containerPort: 6379
+        # 生产环境建议加上资源初始请求
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi

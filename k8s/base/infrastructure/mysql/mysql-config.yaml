@@ -2,7 +2,6 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mysql-pvc
-  namespace: dev
 spec:
   accessModes: [ReadWriteOnce]
   resources:
@@ -13,11 +12,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql
-  namespace: dev
 spec:
   selector:
     matchLabels:
       app: mysql
+  strategy:
+    type: Recreate # 注意：由于使用 ReadWriteOnce PVC，更新时必须先停后启，防止挂载冲突
   template:
     metadata:
       labels:
@@ -26,14 +26,35 @@ spec:
       containers:
         - name: mysql
           image: mysql:8.0
+          args: 
+            - --default-authentication-plugin=mysql_native_password # 解决部分 Spring Boot 连接 8.0 的驱动兼容问题
+            - --character-set-server=utf8mb4
+            - --collation-server=utf8mb4_unicode_ci
           env:
+            - name: TZ
+              value: Asia/Shanghai # 保持与 Java 应用时区一致
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: mysql-secret     # 你创建的 Secret 名字
                   key: ROOT_PASSWORD      # Secret 里的 Key
+            - name: USER_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: USER_DB_PASS
+            - name: ORDER_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: ORDER_DB_PASS
           ports:
             - containerPort: 3306
+          livenessProbe: # 增加存活检查，确保数据库死锁或崩溃时自动重启
+            tcpSocket:
+              port: 3306
+            initialDelaySeconds: 30
+            periodSeconds: 10
           volumeMounts:
             - name: mysql-storage
               mountPath: /var/lib/mysql
@@ -43,6 +64,7 @@ spec:
         - name: mysql-init-volume
           configMap:
             name: mysql-init-config
+            defaultMode: 0755
         - name: mysql-storage
           persistentVolumeClaim:
             claimName: mysql-pvc
@@ -51,9 +73,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mysql
-  namespace: dev
 spec:
   selector:
     app: mysql
   ports:
     - port: 3306
+      targetPort: 3306

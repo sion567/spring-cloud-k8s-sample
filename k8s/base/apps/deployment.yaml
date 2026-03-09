@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-cloud-service # 这是一个占位名，Kustomize 会自动替换
+spec:
+  selector:
+    matchLabels:
+      app: spring-cloud-service
+  template:
+    metadata:
+      labels:
+        app: spring-cloud-service
+    spec:
+      containers:
+      - name: app
+        image: placeholder-image:latest # 镜像由 CI/CD 或 Overlay 指定
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        # 核心：健康检查（利用 Spring Boot Actuator）
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 45
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        # 核心：优雅停机保护
+        lifecycle:
+          preStop:
+            exec:
+              command: ["sh", "-c", "sleep 10"]
+        # 核心：通用环境变量
+        env:
+        - name: JAVA_OPTS
+          value: "-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
+        - name: TZ
+          value: Asia/Shanghai
+        - name: SPRING_PROFILES_ACTIVE
+          value: dev # 默认 dev，生产环境在 overlay 修改

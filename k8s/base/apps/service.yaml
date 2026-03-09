@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-cloud-service # 同理，会被自动更名
+spec:
+  selector:
+    app: spring-cloud-service
+  ports:
+    - protocol: TCP
+      port: 80       # 集群内部访问端口
+      targetPort: 8080 # 容器内部应用端口
+  type: ClusterIP # 内部微服务通常不需要外网暴露，用 ClusterIP 即可

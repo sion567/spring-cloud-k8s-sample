@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1
+kind: Kustomization
+
+resources:
+  - ../../k8s/base          # 引用根目录的公共模板
+
+namePrefix: user-service-    # 自动将 Deployment 改名为 user-service-app
+
+patches:
+  - path: deployment-patch.yaml
+  - path: service-patch.yaml
+
+images:
+  - name: placeholder-image
+    newName: my-registry/user-service
+    newTag: v1.0.1
+
+patches:
+  - target:
+      kind: Deployment
+      name: .*
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: USER_DB_PWD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: USER_USER_PASS

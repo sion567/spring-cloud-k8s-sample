@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-secret
+  namespace: dev
+type: Opaque
+data:
+  # redis123 的 base64 编码
+  redis_password: cmVkaXMxMjM=
+
+---
+# 1. 定义专属服务账号
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: redis-sa
+  namespace: dev
+
+---
+# 2. 定义角色：仅允许对特定 Secret 进行 get
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: redis-secret-reader
+  namespace: dev
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames: ["redis-secret"] # 锁定特定资源名
+  verbs: ["get"]
+
+---
+# 3. 绑定账号与角色
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: redis-rbac-binding
+  namespace: dev
+subjects:
+- kind: ServiceAccount
+  name: redis-sa
+roleRef:
+  kind: Role
+  name: redis-secret-reader
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-server
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      # 关键点：使用受限的 ServiceAccount
+      serviceAccountName: redis-sa 
+      containers:
+      - name: redis
+        image: redis:7.0
+        command: ["redis-server", "--requirepass", "$(REDIS_PASSWORD)"]
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: redis_password
+        ports:
+        - containerPort: 6379
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: dev
+spec:
+  selector:
+    app: redis
+  ports:
+  - protocol: TCP
+    port: 6379
+    targetPort: 6379

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: dev-quota
+  namespace: dev # 对应环境的命名空间
+spec:
+  hard:
+    requests.cpu: "4"         # 该空间下所有 Pod 请求 CPU 总和上限
+    requests.memory: 8Gi      # 该空间下所有 Pod 请求内存总和上限
+    limits.cpu: "8"           # 该空间下所有 Pod 限制 CPU 总和上限
+    limits.memory: 16Gi       # 该空间下所有 Pod 限制内存总和上限
+    pods: "20"                # 限制该空间内最多运行 20 个 Pod
+    services: "10"            # 限制该空间内最多创建 10 个 Service
